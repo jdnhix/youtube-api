@@ -14,114 +14,128 @@ var sampleVideoId = 'PDboeQfAsww';
 
 module.exports.methods = {
 
-    getChannels(auth, id = '') {
 
-        if (id) {
-            var service = google.youtube('v3');
-            service.channels.list({
-                auth: auth,
-                part: 'snippet, contentDetails',
-                onBehalfOfContentOwner: contentOwnerId,
-                id: id,
-                maxResults: 0
-            }, function (err, response) {
-                if (err) {
-                    console.log('The API returned an error: ' + err);
-                    return;
+    //returns the upload playlist id for all channels owned by the content owner.
+    // If a channel id is passed in, it will return the upload playlist id of that specific channel
+    async getChannelUploads(auth, channelIds = '') {
+        const playlistIds = []
+        if (channelIds) {
+            return (await new Promise((resolve, reject) => {
+                    var service = google.youtube('v3');
+                    service.channels.list({
+                        auth: auth,
+                        part: 'snippet, contentDetails',
+                        onBehalfOfContentOwner: contentOwnerId,
+                        managedByMe: true,
+                        maxResults: 0
+                    }, function (err, response) {
+                        if (err) {
+                            console.log('The API returned an error: ' + err);
+                            return;
+                        }
+                        var channels = response.data.items;
+                        if (channels.length === 0) {
+                            console.log('No channel found.');
+                        } else {
+                            channels.forEach(channel => {
+                                if (channelIds.includes(channel.id))
+                                    playlistIds.push(channel.contentDetails.relatedPlaylists.uploads)
+                            })
+                            resolve(playlistIds)
+                        }
+                    });
                 }
-                var channels = response.data.items;
-                if (channels.length === 0) {
-                    console.log('No channel found.');
-                } else {
-                    /*            channels.map(r => {
-                                    console.log(r)
-                                });*/
-                    console.log(`First uploads playlist is ${channels[0].contentDetails.relatedPlaylists.uploads}`);
-                    // getUploadsPlaylist(auth, channels[0].contentDetails.relatedPlaylists.uploads);
-                }
-            });
+            ))
         } else {
-            var service = google.youtube('v3');
-            service.channels.list({
-                auth: auth,
-                part: 'snippet, contentDetails',
-                onBehalfOfContentOwner: contentOwnerId,
-                managedByMe: true,
-                maxResults: 0
-            }, function (err, response) {
-                if (err) {
-                    console.log('The API returned an error: ' + err);
-                    return;
-                }
-                var channels = response.data.items;
-                if (channels.length === 0) {
-                    console.log('No channel found.');
-                } else {
-                    /*            channels.map(r => {
-                                    console.log(r)
-                                });*/
-                    console.log(`First uploads playlist is ${channels}`);
-                    // getUploadsPlaylist(auth, channels[0].contentDetails.relatedPlaylists.uploads);
-                }
-            });
-
+            return (await new Promise((resolve, reject) => {
+                var service = google.youtube('v3');
+                service.channels.list({
+                    auth: auth,
+                    part: 'snippet, contentDetails',
+                    onBehalfOfContentOwner: contentOwnerId,
+                    managedByMe: true,
+                    maxResults: 0
+                }, function (err, response) {
+                    if (err) {
+                        console.log('The API returned an error: ' + err);
+                        return;
+                    }
+                    var channels = response.data.items;
+                    if (channels.length === 0) {
+                        console.log('No channel found.');
+                    } else {
+                        channels.forEach(channel => {
+                            playlistIds.push(channel.contentDetails.relatedPlaylists.uploads)
+                        })
+                        resolve(playlistIds)
+                    }
+                });
+            }))
         }
+
     },
 
-}
-
-function getUploadsPlaylist(auth, playlistId) {
-    var service = google.youtube('v3');
-    service.playlistItems.list({
-        auth: auth,
-        part: 'contentDetails',
-        onBehalfOfContentOwner: contentOwnerId,
-        playlistId: playlistId,
-        maxResults: 50
-    }, function (err, response) {
-        if (err) {
-            console.log('The API returned an error: ' + err);
-            return;
-        }
-        var listItems = response.data.items;
-        if (listItems.length == 0) {
-            console.log('No items found.');
-        } else {
-            /*            listItems.map(v => {
-                            console.log(v)
-                        });*/
-            console.log(`First uploads playlist is ${listItems[0].contentDetails.videoId}`);
-            getMetricsForVideo(auth, listItems[0].contentDetails.videoId);
-        }
-    });
-}
-
-function getMetricsForVideo(auth, videoId) {
-    //todo make all paramaters variables
-    var service = google.youtubeAnalytics('v2');
-    const metrics = 'views,likes'
-    const metricNames = metrics.split(',')
-    service.reports.query({
-        auth: auth,
-        startDate: '2019-06-01',
-        endDate: '2019-06-30',
-        filters: 'video==' + videoId,
-        ids: 'contentOwner==' + contentOwnerId,
-        metrics: metrics
-    }, function (err, response) {
-        if (err) {
-            console.log('The API returned an error: ' + err);
-            return;
-        }
-        var videoMetrics = response.data.rows[0];
-        if (videoMetrics.length === 0) {
-            console.log('No items found.');
-        } else {
-            videoMetrics.forEach(v => {
-                console.log(`${metricNames[videoMetrics.indexOf(v)]}: ${v}`)
+//todo have these functions take care of one, map on the outside
+    async getVideos(auth, playlistId) {
+        return (await new Promise((resolve, reject) => {
+            let videoIds = []
+            const service = google.youtube('v3');
+            service.playlistItems.list({
+                auth: auth,
+                part: 'snippet, contentDetails',
+                onBehalfOfContentOwner: contentOwnerId,
+                playlistId: playlistId,
+                maxResults: 50
+            }, function (err, response) {
+                if (response.data) {
+                    const listItems = response.data.items
+                    listItems.map(item => {
+                        videoIds.push(item.contentDetails.videoId)
+                    });
+                    resolve(videoIds)
+                }
             });
-        }
-    });
-}
+        }))
+    },
 
+    async getMetricsForVideo(auth, videoId, options) {
+        var service = google.youtubeAnalytics('v2');
+        const {metrics} = options
+        const metricNames = metrics.split(',')
+        const {startDate} = options
+        const {endDate} = options
+        const filters = 'video==' + videoId
+        const ids = 'contentOwner==' + contentOwnerId
+
+        return (await new Promise((resolve, reject) => {
+            service.reports.query({
+                auth,
+                startDate,
+                endDate,
+                filters,
+                ids,
+                metrics
+            }, function (err, response) {
+                if (err) {
+                    console.log('The API returned an error: ' + err);
+                    return;
+                }
+                var videoMetrics = response.data.rows[0];
+                if (videoMetrics.length === 0) {
+                    console.log('No items found.');
+                } else {
+                    let index = 0
+                    const metricValues = {}
+                    videoMetrics.forEach(v => {
+                        metricValues[`${metricNames[index]}`] = v
+                        ++index
+                    });
+                    resolve(metricValues)
+                }
+            });
+        }))
+    }
+
+
+}
 
