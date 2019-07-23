@@ -15,6 +15,9 @@
     "googleapis": "^40.0.1",
     "ip": "^1.1.5",
     "nodemon": "^1.19.1",
-    "promise-fs": "^2.1.1"
+    "promise-fs": "^2.1.1",
+    "swagger-editor": "^3.6.31",
+    "swagger-jsdoc": "^3.3.0",
+    "swagger-ui-express": "^4.0.7"
   }
 }
