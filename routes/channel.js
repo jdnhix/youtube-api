@@ -21,32 +21,39 @@ module.exports.channel = (app) => {
         }
 
         const oauth = await auth()
-        const playlistIds = await getChannelUploads(oauth, channelIds)
+        let channelInfo = await getChannelUploads(oauth)
 
 
-        // const videoIds = await new Promise((resolve, reject) => {
-        //     const ids = []
-        //     playlistIds.map(async id => {
-        //         ids.push(await getVideos(oauth, id))
-        //         if(ids.length === playlistIds.length){
-        //             resolve(ids)
-        //         }
-        //     })
-        // })
+        async function fetchAllMetrics(channels) {
+            const promises = channels.map(async channel => {
+                const updatedChannel = await getVideos(oauth, channel)
+                updatedChannel.videos = await resolveVideoMetrics(updatedChannel)
+                return await updatedChannel
+            })
+            return await Promise.all(promises)
+        }
 
 
-        return playlistIds.map(async id => {
-            const videos = await getVideos(oauth, id)
-            console.log(videos.map(vidId => {
-                // console.log(await getMetricsForVideo(oauth, vidId, options))
-                return getMetricsForVideo(oauth, vidId, options)
-            }))
-        })
+        async function resolveVideoMetrics(channel){
+            return await Promise.all(
+                await channel.videos.map(async video => {
+                    return await getMetricsForVideo(oauth, video, options)
+
+                })
+            )
+        }
+
+
+
+
+        const out = await fetchAllMetrics(await channelInfo)
 
 
         // const videoMetrics = await getMetricsForVideo(oauth, videoIds[0], options)
-
-        // res.send(JSON.stringify(videoMetrics, undefined, 2))
+        res.send(JSON.stringify({out}))
+        // res.send(out)
     })
 
 }
+
+

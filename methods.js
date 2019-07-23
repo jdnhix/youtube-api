@@ -18,7 +18,7 @@ module.exports.methods = {
     //returns the upload playlist id for all channels owned by the content owner.
     // If a channel id is passed in, it will return the upload playlist id of that specific channel
     async getChannelUploads(auth, channelIds = '') {
-        const playlistIds = []
+        const output = []
         if (channelIds) {
             return (await new Promise((resolve, reject) => {
                     var service = google.youtube('v3');
@@ -38,10 +38,14 @@ module.exports.methods = {
                             console.log('No channel found.');
                         } else {
                             channels.forEach(channel => {
-                                if (channelIds.includes(channel.id))
-                                    playlistIds.push(channel.contentDetails.relatedPlaylists.uploads)
+                                const channelInfo = {}
+                                if (channelIds.includes(channel.id)) {
+                                    channelInfo.channelName = channel.snippet.title
+                                    channelInfo.uploadPlaylistId = channel.contentDetails.relatedPlaylists.uploads
+                                    output.push(channelInfo)
+                                }
                             })
-                            resolve(playlistIds)
+                            resolve(output)
                         }
                     });
                 }
@@ -65,9 +69,12 @@ module.exports.methods = {
                         console.log('No channel found.');
                     } else {
                         channels.forEach(channel => {
-                            playlistIds.push(channel.contentDetails.relatedPlaylists.uploads)
+                            const channelInfo = {}
+                            channelInfo.channelName = channel.snippet.title
+                            channelInfo.uploadPlaylistId = channel.contentDetails.relatedPlaylists.uploads
+                            output.push(channelInfo)
                         })
-                        resolve(playlistIds)
+                        resolve(output)
                     }
                 });
             }))
@@ -75,36 +82,39 @@ module.exports.methods = {
 
     },
 
-//todo have these functions take care of one, map on the outside
-    async getVideos(auth, playlistId) {
+    async getVideos(auth, channelInfo) {
         return (await new Promise((resolve, reject) => {
-            let videoIds = []
+            let videos = []
             const service = google.youtube('v3');
             service.playlistItems.list({
                 auth: auth,
                 part: 'snippet, contentDetails',
                 onBehalfOfContentOwner: contentOwnerId,
-                playlistId: playlistId,
+                playlistId: channelInfo.uploadPlaylistId,
                 maxResults: 50
             }, function (err, response) {
                 if (response.data) {
                     const listItems = response.data.items
                     listItems.map(item => {
-                        videoIds.push(item.contentDetails.videoId)
+                        const videoInfo = {}
+                        videoInfo.videoName = item.snippet.title
+                        videoInfo.videoId = item.contentDetails.videoId
+                        videos.push(videoInfo)
                     });
-                    resolve(videoIds)
+                    channelInfo.videos = videos
+                    resolve(channelInfo)
                 }
             });
         }))
     },
 
-    async getMetricsForVideo(auth, videoId, options) {
+    async getMetricsForVideo(auth, video, options) {
         var service = google.youtubeAnalytics('v2');
         const {metrics} = options
         const metricNames = metrics.split(',')
         const {startDate} = options
         const {endDate} = options
-        const filters = 'video==' + videoId
+        const filters = 'video==' + video.videoId
         const ids = 'contentOwner==' + contentOwnerId
 
         return (await new Promise((resolve, reject) => {
@@ -130,7 +140,8 @@ module.exports.methods = {
                         metricValues[`${metricNames[index]}`] = v
                         ++index
                     });
-                    resolve(metricValues)
+                    video.metrics = metricValues
+                    resolve(video)
                 }
             });
         }))
