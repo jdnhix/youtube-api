@@ -24,6 +24,18 @@ module.exports.channel = (app) => {
      *          items:
      *              type: string
      *        description: array of channel ids
+     *      - in: query
+     *        name: startDate
+     *        schema:
+     *          type: string
+     *        required: true
+     *        description: metrics are pulled starting from this date (YYYY-MM-DD)
+     *      - in: query
+     *        name: endDate
+     *        schema:
+     *          type: string
+     *        required: true
+     *        description: metrics are pulled ending on this date (YYYY-MM-DD)
      *     consumes:
      *       - application/json
      *     produces:
@@ -44,11 +56,15 @@ module.exports.channel = (app) => {
             'Content-Type': 'application/json',
         })
 
+
+
         //set query params that might change here
         const  channelIds = req.query.channelIds || null
+        const startDate = req.query.startDate // YYYY-MM-DD format
+        const endDate = req.query.endDate // YYYY-MM-DD format
         const options = {
-            startDate: '2019-06-01',
-            endDate: '2019-06-30',
+            startDate: startDate,
+            endDate: endDate,
             metrics: 'views,redViews,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,comments,' +
                 'likes,dislikes,shares,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists,' +
                 'annotationClickThroughRate,annotationCloseRate,cardImpressions,cardClicks,cardClickRate,cardTeaserImpressions,' +

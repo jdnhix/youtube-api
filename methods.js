@@ -5,15 +5,8 @@ var tommeeProfitChannel = 'UC4e7J19VFdz05QPtdHnuLbQ';
 var sampleUploadsPlaylist = 'UU4e7J19VFdz05QPtdHnuLbQ';
 var sampleVideoId = 'PDboeQfAsww';
 
-//todo so i need to make so that:
-//i can either get one or all channel id's
-//save the result of that to a var
-// set up 'getuploadsplaylist' so that i eitehr pass in an channel id or nothing and it gets all
-// pass in the var of channel id and save the res of that call
-//pass that var int get metrics, which is set up the same way
 
 module.exports.methods = {
-
 
     //returns the upload playlist id for all channels owned by the content owner.
     // If a channel id is passed in, it will return the upload playlist id of that specific channel

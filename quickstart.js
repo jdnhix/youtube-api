@@ -3,10 +3,7 @@ const readline = require('readline');
 const {google} = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 
-var contentOwnerId = '1BPD_EtLBg7l1adJDNMc8A';
-var tommeeProfitChannel = 'UC4e7J19VFdz05QPtdHnuLbQ';
-var sampleUploadsPlaylist = 'UU4e7J19VFdz05QPtdHnuLbQ';
-var sampleVideoId = 'PDboeQfAsww';
+
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/youtube-nodejs-quickstart.json
@@ -14,8 +11,6 @@ var SCOPES = ['https://www.googleapis.com/auth/youtubepartner'];
 var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
     process.env.USERPROFILE) + '/.credentials/';
 var TOKEN_PATH = TOKEN_DIR + 'youtube-nodejs-quickstart.json';
-
-
 
 
 module.exports.auth = async () => {
