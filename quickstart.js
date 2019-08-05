@@ -48,12 +48,28 @@ const authorize = async (credentials) => {
 
     const token = await new Promise( (resolve, reject) => {
         fs.readFile(TOKEN_PATH, async (err, token) => {
-            err ? reject(err) : resolve(token)
-        })
-    });
+            if (err) {
+                console.log('hitme')
+                console.log(getNewToken(oauth2Client))
+                resolve(getNewToken(oauth2Client))
+            } else {
+                resolve(token)
+                oauth2Client.credentials = JSON.parse(token);
 
-    oauth2Client.credentials = JSON.parse(token)
-    return oauth2Client
+            }
+        })
+    })
+
+    const test = await token
+    console.log(test)
+
+//    console.log(token)
+//     const test = await token.then((t) => {
+//         return t
+//     })
+//     console.log(test)
+
+
 }
 
 /**
@@ -78,14 +94,14 @@ const getNewToken = async (oauth2Client) => {
     try {
         rl.question('Enter the code from that page here: ', function (code) {
             rl.close();
-            oauth2Client.getToken(code, function (err, token) {
+            return oauth2Client.getToken(code, function (err, token) {
                 if (err) {
                     console.log('Error while trying to retrieve access token', err);
                     return;
                 }
-                oauth2Client.credentials = token;
+                // oauth2Client.credentials = token;
                 storeToken(token);
-                return oauth2Client;
+                return token;
             });
         });
     }
